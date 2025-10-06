@@ -38,6 +38,11 @@ export interface WizardData {
 
   // Layout escolhido
   layoutEscolhido: number;
+
+  // Validação de etapas
+  _step1Valid?: boolean;
+  _step2Valid?: boolean;
+  _step3Valid?: boolean;
 }
 
 const STEPS = [
@@ -83,7 +88,17 @@ export function Wizard({ onComplete, onBack }: WizardProps) {
     setData((prev) => ({ ...prev, ...updates }));
   };
 
+  const canProceed = () => {
+    if (currentStep === 0) return data._step1Valid;
+    if (currentStep === 1) return data._step2Valid;
+    if (currentStep === 2) return data._step3Valid;
+    return true;
+  };
+
   const handleNext = () => {
+    if (!canProceed()) {
+      return;
+    }
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
@@ -182,6 +197,7 @@ export function Wizard({ onComplete, onBack }: WizardProps) {
           <Button
             onClick={handleNext}
             className="gap-2"
+            disabled={!canProceed()}
           >
             {currentStep === STEPS.length - 1 ? "Finalizar" : "Próximo"}
             <ChevronRight className="w-4 h-4" />

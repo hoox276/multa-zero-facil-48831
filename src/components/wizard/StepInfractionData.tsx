@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,10 +15,118 @@ interface StepInfractionDataProps {
   updateData: (updates: Partial<WizardData>) => void;
 }
 
+interface ValidationErrors {
+  numeroAuto?: string;
+  dataInfracao?: string;
+  dataCiencia?: string;
+  localInfracao?: string;
+  orgaoAutuador?: string;
+  descricaoInfracao?: string;
+  valorMulta?: string;
+}
+
 export function StepInfractionData({ data, updateData }: StepInfractionDataProps) {
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateField = (field: keyof ValidationErrors, value: string) => {
+    const newErrors = { ...errors };
+    
+    switch (field) {
+      case 'numeroAuto':
+        if (!value.trim()) {
+          newErrors.numeroAuto = 'Número do auto é obrigatório';
+        } else {
+          delete newErrors.numeroAuto;
+        }
+        break;
+        
+      case 'dataInfracao':
+        if (!value.trim()) {
+          newErrors.dataInfracao = 'Data da infração é obrigatória';
+        } else {
+          delete newErrors.dataInfracao;
+        }
+        break;
+        
+      case 'dataCiencia':
+        if (!value.trim()) {
+          newErrors.dataCiencia = 'Data de ciência é obrigatória';
+        } else {
+          delete newErrors.dataCiencia;
+        }
+        break;
+        
+      case 'localInfracao':
+        if (!value.trim()) {
+          newErrors.localInfracao = 'Local da infração é obrigatório';
+        } else if (value.trim().length < 10) {
+          newErrors.localInfracao = 'Informe o local completo';
+        } else {
+          delete newErrors.localInfracao;
+        }
+        break;
+        
+      case 'orgaoAutuador':
+        if (!value.trim()) {
+          newErrors.orgaoAutuador = 'Órgão autuador é obrigatório';
+        } else {
+          delete newErrors.orgaoAutuador;
+        }
+        break;
+        
+      case 'descricaoInfracao':
+        if (!value.trim()) {
+          newErrors.descricaoInfracao = 'Descrição da infração é obrigatória';
+        } else if (value.trim().length < 20) {
+          newErrors.descricaoInfracao = 'Informe uma descrição mais detalhada';
+        } else {
+          delete newErrors.descricaoInfracao;
+        }
+        break;
+        
+      case 'valorMulta':
+        if (!value.trim()) {
+          newErrors.valorMulta = 'Valor da multa é obrigatório';
+        } else {
+          delete newErrors.valorMulta;
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+  };
+
+  const handleBlur = (field: keyof ValidationErrors) => {
+    setTouched({ ...touched, [field]: true });
+    validateField(field, data[field as keyof WizardData] as string);
+  };
+
+  const handleChange = (field: keyof ValidationErrors, value: string) => {
+    updateData({ [field]: value });
+    
+    if (touched[field]) {
+      validateField(field, value);
+    }
+  };
+
+  const isFormValid = () => {
+    return Object.keys(errors).length === 0 &&
+      data.numeroAuto.trim() &&
+      data.dataInfracao.trim() &&
+      data.dataCiencia.trim() &&
+      data.localInfracao.trim() &&
+      data.orgaoAutuador.trim() &&
+      data.descricaoInfracao.trim() &&
+      data.valorMulta.trim();
+  };
+
+  useEffect(() => {
+    updateData({ _step2Valid: isFormValid() } as any);
+  }, [data.numeroAuto, data.dataInfracao, data.dataCiencia, data.localInfracao, data.orgaoAutuador, data.descricaoInfracao, data.valorMulta, errors]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,7 +149,7 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
     setExtracting(true);
 
     try {
-      // Call edge function to extract data via GPT-5
+      // Call edge function to extract data
       const { data: extractedData, error } = await supabase.functions.invoke('extract-ait', {
         body: { 
           fileName: file.name,
@@ -113,7 +221,7 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           <div className="space-y-3">
             <p className="font-medium">Upload do Auto de Infração (AIT)</p>
             <p className="text-sm">
-              Envie uma foto ou PDF do seu Auto de Infração para preenchimento automático via IA (GPT-5).
+              Envie uma foto ou PDF do seu Auto de Infração para preenchimento automático.
             </p>
             <div className="flex items-center gap-3">
               <Button
@@ -158,10 +266,18 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           <Input
             id="numeroAuto"
             value={data.numeroAuto}
-            onChange={(e) => updateData({ numeroAuto: e.target.value })}
+            onChange={(e) => handleChange('numeroAuto', e.target.value)}
+            onBlur={() => handleBlur('numeroAuto')}
             placeholder="Ex: 1234567890"
+            className={touched.numeroAuto && errors.numeroAuto ? 'border-destructive' : ''}
             required
           />
+          {touched.numeroAuto && errors.numeroAuto && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.numeroAuto}
+            </p>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
@@ -171,9 +287,17 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
               id="dataInfracao"
               type="date"
               value={data.dataInfracao}
-              onChange={(e) => updateData({ dataInfracao: e.target.value })}
+              onChange={(e) => handleChange('dataInfracao', e.target.value)}
+              onBlur={() => handleBlur('dataInfracao')}
+              className={touched.dataInfracao && errors.dataInfracao ? 'border-destructive' : ''}
               required
             />
+            {touched.dataInfracao && errors.dataInfracao && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.dataInfracao}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -187,9 +311,17 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
               id="dataCiencia"
               type="date"
               value={data.dataCiencia}
-              onChange={(e) => updateData({ dataCiencia: e.target.value })}
+              onChange={(e) => handleChange('dataCiencia', e.target.value)}
+              onBlur={() => handleBlur('dataCiencia')}
+              className={touched.dataCiencia && errors.dataCiencia ? 'border-destructive' : ''}
               required
             />
+            {touched.dataCiencia && errors.dataCiencia && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.dataCiencia}
+              </p>
+            )}
           </div>
         </div>
 
@@ -217,10 +349,18 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           <Input
             id="orgaoAutuador"
             value={data.orgaoAutuador}
-            onChange={(e) => updateData({ orgaoAutuador: e.target.value })}
+            onChange={(e) => handleChange('orgaoAutuador', e.target.value)}
+            onBlur={() => handleBlur('orgaoAutuador')}
             placeholder="Ex: Detran-SP, CET, PRF"
+            className={touched.orgaoAutuador && errors.orgaoAutuador ? 'border-destructive' : ''}
             required
           />
+          {touched.orgaoAutuador && errors.orgaoAutuador && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.orgaoAutuador}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -228,10 +368,18 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           <Input
             id="localInfracao"
             value={data.localInfracao}
-            onChange={(e) => updateData({ localInfracao: e.target.value })}
+            onChange={(e) => handleChange('localInfracao', e.target.value)}
+            onBlur={() => handleBlur('localInfracao')}
             placeholder="Ex: Av. Paulista, altura do nº 1000 - São Paulo/SP"
+            className={touched.localInfracao && errors.localInfracao ? 'border-destructive' : ''}
             required
           />
+          {touched.localInfracao && errors.localInfracao && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.localInfracao}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -239,11 +387,19 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           <Textarea
             id="descricaoInfracao"
             value={data.descricaoInfracao}
-            onChange={(e) => updateData({ descricaoInfracao: e.target.value })}
+            onChange={(e) => handleChange('descricaoInfracao', e.target.value)}
+            onBlur={() => handleBlur('descricaoInfracao')}
             placeholder="Descreva a infração conforme consta no auto"
             rows={4}
+            className={touched.descricaoInfracao && errors.descricaoInfracao ? 'border-destructive' : ''}
             required
           />
+          {touched.descricaoInfracao && errors.descricaoInfracao && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.descricaoInfracao}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -251,10 +407,18 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           <Input
             id="valorMulta"
             value={data.valorMulta}
-            onChange={(e) => updateData({ valorMulta: e.target.value })}
+            onChange={(e) => handleChange('valorMulta', e.target.value)}
+            onBlur={() => handleBlur('valorMulta')}
             placeholder="R$ 0,00"
+            className={touched.valorMulta && errors.valorMulta ? 'border-destructive' : ''}
             required
           />
+          {touched.valorMulta && errors.valorMulta && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.valorMulta}
+            </p>
+          )}
         </div>
 
         <Alert>
@@ -287,6 +451,15 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
             <AlertDescription>
               Como você informou que pagou com desconto via SNE, verifique com o órgão autuador se ainda é possível 
               apresentar defesa. Em alguns casos, o pagamento implica em renúncia ao direito de defesa.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!isFormValid() && Object.values(touched).some(v => v) && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Preencha todos os campos corretamente para continuar.
             </AlertDescription>
           </Alert>
         )}

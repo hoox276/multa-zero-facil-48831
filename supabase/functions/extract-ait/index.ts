@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -12,6 +13,11 @@ serve(async (req) => {
 
   try {
     const { fileData, fileName, fileType } = await req.json();
+    
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      throw new Error("OPENAI_API_KEY not configured");
+    }
 
     // Extract base64 data
     const base64Data = fileData.split(',')[1];
@@ -50,29 +56,24 @@ Retorne APENAS um objeto JSON válido com esses campos. Se algum campo não for 
       }
     ];
 
-    // Call Lovable AI Gateway with GPT-5
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call OpenAI API with GPT-5
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${openAIApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5",
+        model: "gpt-5-2025-08-07",
         messages: messages,
-        temperature: 0.3,
+        max_completion_tokens: 1000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error("OpenAI API error:", response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const aiResponse = await response.json();

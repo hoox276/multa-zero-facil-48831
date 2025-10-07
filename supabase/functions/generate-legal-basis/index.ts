@@ -14,8 +14,11 @@ serve(async (req) => {
   try {
     const { motivoDefesa, descricaoInfracao } = await req.json();
     
+    console.log("[generate-legal-basis] Generating legal basis");
+    
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
+      console.error("[generate-legal-basis] OPENAI_API_KEY not configured");
       throw new Error("OPENAI_API_KEY not configured");
     }
 
@@ -71,7 +74,7 @@ A fundamentação deve ter entre 200-300 palavras, ser técnica, formal e bem es
     });
 
   } catch (error) {
-    console.error("Error in generate-legal-basis:", error);
+    console.error("[generate-legal-basis] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: errorMessage }),

@@ -149,18 +149,32 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
     setExtracting(true);
 
     try {
+      const base64Data = await fileToBase64(file);
+      
+      console.log('Calling extract-ait function with file:', file.name);
+      
       // Call edge function to extract data
       const { data: extractedData, error } = await supabase.functions.invoke('extract-ait', {
         body: { 
           fileName: file.name,
           fileType: file.type,
-          fileData: await fileToBase64(file)
+          fileData: base64Data
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Erro ao processar arquivo');
+      }
+
+      if (extractedData && extractedData.error) {
+        console.error('API returned error:', extractedData.error);
+        throw new Error(extractedData.error);
+      }
 
       if (extractedData) {
+        console.log('Extracted data received:', extractedData);
+        
         updateData({
           numeroAuto: extractedData.numeroAuto || data.numeroAuto,
           dataInfracao: extractedData.dataInfracao || data.dataInfracao,
@@ -174,7 +188,8 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
       }
     } catch (error) {
       console.error('Erro ao extrair dados:', error);
-      toast.error('Erro ao extrair dados. Preencha manualmente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Erro ao extrair dados: ${errorMessage}. Preencha manualmente.`);
     } finally {
       setExtracting(false);
     }

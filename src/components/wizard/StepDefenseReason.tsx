@@ -35,6 +35,7 @@ export function StepDefenseReason({ data, updateData }: StepDefenseReasonProps) 
     }
 
     setGeneratingExplanation(true);
+    console.log('Generating defense explanation...');
 
     try {
       const { data: response, error } = await supabase.functions.invoke('generate-defense-explanation', {
@@ -47,15 +48,27 @@ export function StepDefenseReason({ data, updateData }: StepDefenseReasonProps) 
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Erro ao gerar explicação');
+      }
+
+      if (response && response.error) {
+        console.error('API returned error:', response.error);
+        throw new Error(response.error);
+      }
 
       if (response?.explanation) {
+        console.log('Explanation generated successfully');
         updateData({ motivoDefesa: response.explanation });
         toast.success('Explicação gerada com sucesso!');
+      } else {
+        throw new Error('Resposta inválida da API');
       }
     } catch (error) {
       console.error('Erro ao gerar explicação:', error);
-      toast.error('Erro ao gerar explicação. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Erro ao gerar explicação: ${errorMessage}`);
     } finally {
       setGeneratingExplanation(false);
     }
@@ -68,6 +81,7 @@ export function StepDefenseReason({ data, updateData }: StepDefenseReasonProps) 
     }
 
     setGeneratingLegal(true);
+    console.log('Generating legal basis...');
 
     try {
       const { data: response, error } = await supabase.functions.invoke('generate-legal-basis', {
@@ -77,15 +91,27 @@ export function StepDefenseReason({ data, updateData }: StepDefenseReasonProps) 
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Erro ao gerar fundamentação');
+      }
+
+      if (response && response.error) {
+        console.error('API returned error:', response.error);
+        throw new Error(response.error);
+      }
 
       if (response?.legalBasis) {
+        console.log('Legal basis generated successfully');
         updateData({ fundamentacaoLegal: response.legalBasis });
         toast.success('Fundamentação legal gerada!');
+      } else {
+        throw new Error('Resposta inválida da API');
       }
     } catch (error) {
       console.error('Erro ao gerar fundamentação:', error);
-      toast.error('Erro ao gerar fundamentação. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Erro ao gerar fundamentação: ${errorMessage}`);
     } finally {
       setGeneratingLegal(false);
     }

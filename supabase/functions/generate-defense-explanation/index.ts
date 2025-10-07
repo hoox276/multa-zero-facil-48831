@@ -14,8 +14,11 @@ serve(async (req) => {
   try {
     const { numeroAuto, dataInfracao, localInfracao, descricaoInfracao, orgaoAutuador } = await req.json();
     
+    console.log("[generate-defense-explanation] Generating explanation for auto:", numeroAuto);
+    
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
+      console.error("[generate-defense-explanation] OPENAI_API_KEY not configured");
       throw new Error("OPENAI_API_KEY not configured");
     }
 
@@ -29,6 +32,8 @@ Dados do Auto:
 - Órgão Autuador: ${orgaoAutuador}
 
 Gere um parágrafo explicando os fatos de forma técnica, mencionando possíveis inconsistências ou vícios formais que justifiquem a defesa. Não use primeira pessoa. Seja direto e objetivo, com no máximo 150 palavras.`;
+
+    console.log("[generate-defense-explanation] Calling OpenAI API");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -54,11 +59,24 @@ Gere um parágrafo explicando os fatos de forma técnica, mencionando possíveis
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI API error:", response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error(`[generate-defense-explanation] OpenAI API error: ${response.status}`, errorText);
+      
+      let errorDetail = `OpenAI API error: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error?.message) {
+          errorDetail = errorJson.error.message;
+        }
+      } catch (e) {
+        errorDetail = errorText.substring(0, 200);
+      }
+      
+      throw new Error(errorDetail);
     }
 
     const aiResponse = await response.json();
+    console.log("[generate-defense-explanation] Response received successfully");
+    
     const explanation = aiResponse.choices[0].message.content;
 
     return new Response(JSON.stringify({ explanation }), {
@@ -66,7 +84,7 @@ Gere um parágrafo explicando os fatos de forma técnica, mencionando possíveis
     });
 
   } catch (error) {
-    console.error("Error in generate-defense-explanation:", error);
+    console.error("[generate-defense-explanation] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: errorMessage }),

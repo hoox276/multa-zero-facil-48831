@@ -132,10 +132,10 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    // Validate file type - Only images supported
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!validTypes.includes(file.type)) {
-      toast.error('Formato inválido. Use PDF, JPG ou PNG');
+      toast.error('Formato inválido. Use apenas JPG ou PNG. Para PDFs, tire uma foto ou screenshot.');
       return;
     }
 
@@ -236,7 +236,7 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           <div className="space-y-3">
             <p className="font-medium">Upload do Auto de Infração (AIT)</p>
             <p className="text-sm">
-              Envie uma foto ou PDF do seu Auto de Infração para preenchimento automático.
+              Envie uma foto (JPG ou PNG) do seu Auto de Infração para preenchimento automático.
             </p>
             <div className="flex items-center gap-3">
               <Button
@@ -267,7 +267,7 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
             <input
               id="ait-upload"
               type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
+              accept=".jpg,.jpeg,.png"
               onChange={handleFileUpload}
               className="hidden"
             />

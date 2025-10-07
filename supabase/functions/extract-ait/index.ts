@@ -28,14 +28,13 @@ serve(async (req) => {
       throw new Error("Invalid file format - expected data URL");
     }
 
-    // Validate MIME type for images
+    // Validate MIME type - Only images are supported by GPT-5 vision API
     const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    const isPDF = fileType === 'application/pdf';
     const isImage = validImageTypes.includes(fileType);
 
-    if (!isPDF && !isImage) {
+    if (!isImage) {
       console.error(`[extract-ait] Unsupported file type: ${fileType}`);
-      throw new Error(`Unsupported file type: ${fileType}. Use PDF, JPG or PNG`);
+      throw new Error(`Tipo de arquivo não suportado. Use apenas JPG ou PNG. Para PDFs, tire uma foto ou screenshot do documento.`);
     }
 
     console.log(`[extract-ait] Calling OpenAI API with model gpt-5-2025-08-07`);

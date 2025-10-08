@@ -163,7 +163,7 @@ export function StepPreview({ data, updateData }: StepPreviewProps) {
                   <div className="space-y-2">
                     <p className="font-semibold">II. DO DIREITO E DOS FUNDAMENTOS DA DEFESA</p>
                     <p>
-                      {data.fundamentacaoLegal || "[Fundamentação legal completa baseada no CTB e Resolução Contran 918/2022]"}
+                      [Fundamentação legal completa baseada no CTB e Resolução Contran 918/2022]
                     </p>
                   </div>
 
@@ -204,12 +204,6 @@ export function StepPreview({ data, updateData }: StepPreviewProps) {
                 <strong>Importante:</strong> A Defesa Prévia é a etapa anterior à aplicação da penalidade. 
                 Os prazos e canais para protocolo constam na Notificação de Autuação emitida pelo órgão autuador.
               </p>
-              {data.pagouComDesconto && (
-                <p className="text-amber-600 dark:text-amber-500">
-                  ⚠️ <strong>Atenção:</strong> O pagamento com desconto pelo SNE pode implicar renúncia ao direito de recurso. 
-                  Confira as instruções específicas na sua notificação.
-                </p>
-              )}
             </AlertDescription>
           </Alert>
 

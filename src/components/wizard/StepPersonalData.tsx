@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { WizardData } from "../Wizard";
-import { validateCPF, formatCPF, validateWhatsApp, formatWhatsApp, formatCEP } from "@/lib/validators";
+import { validateCPF, formatCPF, formatCEP } from "@/lib/validators";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface StepPersonalDataProps {
   data: WizardData;
@@ -14,13 +15,41 @@ interface StepPersonalDataProps {
 interface ValidationErrors {
   nome?: string;
   cpf?: string;
-  telefone?: string;
-  email?: string;
   endereco?: string;
   cidade?: string;
   estado?: string;
   cep?: string;
 }
+
+const ESTADOS_BRASILEIROS = [
+  { sigla: "AC", nome: "Acre" },
+  { sigla: "AL", nome: "Alagoas" },
+  { sigla: "AP", nome: "Amapá" },
+  { sigla: "AM", nome: "Amazonas" },
+  { sigla: "BA", nome: "Bahia" },
+  { sigla: "CE", nome: "Ceará" },
+  { sigla: "DF", nome: "Distrito Federal" },
+  { sigla: "ES", nome: "Espírito Santo" },
+  { sigla: "GO", nome: "Goiás" },
+  { sigla: "MA", nome: "Maranhão" },
+  { sigla: "MT", nome: "Mato Grosso" },
+  { sigla: "MS", nome: "Mato Grosso do Sul" },
+  { sigla: "MG", nome: "Minas Gerais" },
+  { sigla: "PA", nome: "Pará" },
+  { sigla: "PB", nome: "Paraíba" },
+  { sigla: "PR", nome: "Paraná" },
+  { sigla: "PE", nome: "Pernambuco" },
+  { sigla: "PI", nome: "Piauí" },
+  { sigla: "RJ", nome: "Rio de Janeiro" },
+  { sigla: "RN", nome: "Rio Grande do Norte" },
+  { sigla: "RS", nome: "Rio Grande do Sul" },
+  { sigla: "RO", nome: "Rondônia" },
+  { sigla: "RR", nome: "Roraima" },
+  { sigla: "SC", nome: "Santa Catarina" },
+  { sigla: "SP", nome: "São Paulo" },
+  { sigla: "SE", nome: "Sergipe" },
+  { sigla: "TO", nome: "Tocantins" },
+];
 
 export function StepPersonalData({ data, updateData }: StepPersonalDataProps) {
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -50,31 +79,6 @@ export function StepPersonalData({ data, updateData }: StepPersonalDataProps) {
           } else {
             delete newErrors.cpf;
           }
-        }
-        break;
-        
-      case 'telefone':
-        if (!value.trim()) {
-          newErrors.telefone = 'WhatsApp é obrigatório';
-        } else {
-          const validation = validateWhatsApp(value);
-          if (!validation.valid) {
-            newErrors.telefone = validation.error;
-          } else {
-            delete newErrors.telefone;
-            // Store E.164 format internally
-            updateData({ telefone: validation.e164! });
-          }
-        }
-        break;
-        
-      case 'email':
-        if (!value.trim()) {
-          newErrors.email = 'E-mail é obrigatório';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          newErrors.email = 'E-mail inválido';
-        } else {
-          delete newErrors.email;
         }
         break;
         
@@ -131,12 +135,8 @@ export function StepPersonalData({ data, updateData }: StepPersonalDataProps) {
     // Apply formatting
     if (field === 'cpf') {
       formattedValue = formatCPF(value);
-    } else if (field === 'telefone') {
-      formattedValue = formatWhatsApp(value);
     } else if (field === 'cep') {
       formattedValue = formatCEP(value);
-    } else if (field === 'estado') {
-      formattedValue = value.toUpperCase().slice(0, 2);
     }
     
     updateData({ [field]: formattedValue });
@@ -150,8 +150,6 @@ export function StepPersonalData({ data, updateData }: StepPersonalDataProps) {
     return Object.keys(errors).length === 0 &&
       data.nome.trim() &&
       data.cpf.trim() &&
-      data.telefone.trim() &&
-      data.email.trim() &&
       data.endereco.trim() &&
       data.cidade.trim() &&
       data.estado.trim() &&
@@ -191,61 +189,21 @@ export function StepPersonalData({ data, updateData }: StepPersonalDataProps) {
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="cpf">CPF *</Label>
-            <Input
-              id="cpf"
-              value={data.cpf}
-              onChange={(e) => handleChange('cpf', e.target.value)}
-              onBlur={() => handleBlur('cpf')}
-              placeholder="000.000.000-00"
-              maxLength={14}
-              className={touched.cpf && errors.cpf ? 'border-destructive' : ''}
-            />
-            {touched.cpf && errors.cpf && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {errors.cpf}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="telefone">WhatsApp *</Label>
-            <Input
-              id="telefone"
-              value={data.telefone.startsWith('+55') ? formatWhatsApp(data.telefone.slice(3)) : data.telefone}
-              onChange={(e) => handleChange('telefone', e.target.value)}
-              onBlur={() => handleBlur('telefone')}
-              placeholder="(11) 99999-9999"
-              maxLength={15}
-              className={touched.telefone && errors.telefone ? 'border-destructive' : ''}
-            />
-            {touched.telefone && errors.telefone && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {errors.telefone}
-              </p>
-            )}
-          </div>
-        </div>
-
         <div className="space-y-2">
-          <Label htmlFor="email">E-mail *</Label>
+          <Label htmlFor="cpf">CPF *</Label>
           <Input
-            id="email"
-            type="email"
-            value={data.email}
-            onChange={(e) => handleChange('email', e.target.value)}
-            onBlur={() => handleBlur('email')}
-            placeholder="seu@email.com"
-            className={touched.email && errors.email ? 'border-destructive' : ''}
+            id="cpf"
+            value={data.cpf}
+            onChange={(e) => handleChange('cpf', e.target.value)}
+            onBlur={() => handleBlur('cpf')}
+            placeholder="000.000.000-00"
+            maxLength={14}
+            className={touched.cpf && errors.cpf ? 'border-destructive' : ''}
           />
-          {touched.email && errors.email && (
+          {touched.cpf && errors.cpf && (
             <p className="text-sm text-destructive flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
-              {errors.email}
+              {errors.cpf}
             </p>
           )}
         </div>
@@ -289,15 +247,30 @@ export function StepPersonalData({ data, updateData }: StepPersonalDataProps) {
 
           <div className="space-y-2">
             <Label htmlFor="estado">Estado *</Label>
-            <Input
-              id="estado"
+            <Select
               value={data.estado}
-              onChange={(e) => handleChange('estado', e.target.value)}
-              onBlur={() => handleBlur('estado')}
-              placeholder="SP"
-              maxLength={2}
-              className={touched.estado && errors.estado ? 'border-destructive' : ''}
-            />
+              onValueChange={(value) => {
+                updateData({ estado: value });
+                if (touched.estado) {
+                  validateField('estado', value);
+                }
+              }}
+            >
+              <SelectTrigger 
+                id="estado"
+                className={touched.estado && errors.estado ? 'border-destructive' : ''}
+                onBlur={() => handleBlur('estado')}
+              >
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {ESTADOS_BRASILEIROS.map((estado) => (
+                  <SelectItem key={estado.sigla} value={estado.sigla}>
+                    {estado.sigla} - {estado.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {touched.estado && errors.estado && (
               <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />

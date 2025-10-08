@@ -16,28 +16,22 @@ export interface WizardData {
   cidade: string;
   estado: string;
   cep: string;
-  telefone: string;
-  email: string;
 
   // Dados da infração
+  orgaoAutuador: string;
+  ufOrgao: string;
   numeroAuto: string;
   dataInfracao: string;
   dataCiencia: string;
   localInfracao: string;
-  orgaoAutuador: string;
   descricaoInfracao: string;
   valorMulta: string;
 
-  // Verificações
-  pagouComDesconto: boolean;
+  // Fatos e fundamentos
   motivoDefesa: string;
-  fundamentacaoLegal: string;
 
   // Documentos
   anexos: File[];
-
-  // Layout escolhido
-  layoutEscolhido: number;
 
   // Validação de etapas
   _step1Valid?: boolean;
@@ -48,8 +42,8 @@ export interface WizardData {
 const STEPS = [
   { title: "Dados Pessoais", description: "Suas informações" },
   { title: "Dados da Infração", description: "Detalhes do auto" },
-  { title: "Fatos e Fundamentos", description: "Defesa" },
-  { title: "Prévia e Pagamento", description: "Finalização" },
+  { title: "Fatos e Fundamentos", description: "Sua versão dos fatos" },
+  { title: "Gerar Defesa Prévia", description: "Documento final" },
 ];
 
 interface WizardProps {
@@ -66,20 +60,16 @@ export function Wizard({ onComplete, onBack }: WizardProps) {
     cidade: "",
     estado: "",
     cep: "",
-    telefone: "",
-    email: "",
+    orgaoAutuador: "",
+    ufOrgao: "",
     numeroAuto: "",
     dataInfracao: "",
     dataCiencia: "",
     localInfracao: "",
-    orgaoAutuador: "",
     descricaoInfracao: "",
     valorMulta: "",
-    pagouComDesconto: false,
     motivoDefesa: "",
-    fundamentacaoLegal: "",
     anexos: [],
-    layoutEscolhido: 1,
   });
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;

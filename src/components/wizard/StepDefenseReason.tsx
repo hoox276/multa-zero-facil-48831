@@ -103,7 +103,6 @@ export function StepDefenseReason({ data, updateData }: StepDefenseReasonProps) 
 
       if (response?.legalBasis) {
         console.log('Legal basis generated successfully');
-        updateData({ fundamentacaoLegal: response.legalBasis });
         toast.success('Fundamentação legal gerada!');
       } else {
         throw new Error('Resposta inválida da API');
@@ -183,42 +182,6 @@ export function StepDefenseReason({ data, updateData }: StepDefenseReasonProps) 
           )}
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="fundamentacaoLegal">Fundamentação Legal (Opcional)</Label>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleGenerateLegalBasis}
-              disabled={generatingLegal || !data.motivoDefesa}
-              className="gap-2"
-            >
-              {generatingLegal ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Gerar fundamentação
-                </>
-              )}
-            </Button>
-          </div>
-          <Textarea
-            id="fundamentacaoLegal"
-            value={data.fundamentacaoLegal}
-            onChange={(e) => updateData({ fundamentacaoLegal: e.target.value })}
-            placeholder="Fundamentação legal com base no CTB e Resolução Contran 918/2022..."
-            rows={6}
-          />
-          <p className="text-xs text-muted-foreground">
-            Nossa IA utilizará o CTB, Resoluções do Contran (especialmente a 918/2022) e jurisprudência 
-            relevante para fundamentar sua defesa.
-          </p>
-        </div>
 
         {/* Documentos probatórios opcionais */}
         <div className="space-y-4 pt-4 border-t">

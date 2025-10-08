@@ -2,13 +2,10 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Info, Upload, Loader2 } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { WizardData } from "../Wizard";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface StepInfractionDataProps {
   data: WizardData;
@@ -19,16 +16,54 @@ interface ValidationErrors {
   numeroAuto?: string;
   dataInfracao?: string;
   dataCiencia?: string;
-  localInfracao?: string;
   orgaoAutuador?: string;
+  ufOrgao?: string;
+  localInfracao?: string;
   descricaoInfracao?: string;
   valorMulta?: string;
 }
 
+const ORGAOS_AUTUADORES = [
+  "DETRAN",
+  "PRF - Polícia Rodoviária Federal",
+  "CET - Companhia de Engenharia de Tráfego",
+  "PM - Polícia Militar",
+  "GMet - Guarda Municipal de Trânsito",
+  "DER - Departamento de Estradas de Rodagem",
+  "Outro",
+];
+
+const ESTADOS_BRASILEIROS = [
+  { sigla: "AC", nome: "Acre" },
+  { sigla: "AL", nome: "Alagoas" },
+  { sigla: "AP", nome: "Amapá" },
+  { sigla: "AM", nome: "Amazonas" },
+  { sigla: "BA", nome: "Bahia" },
+  { sigla: "CE", nome: "Ceará" },
+  { sigla: "DF", nome: "Distrito Federal" },
+  { sigla: "ES", nome: "Espírito Santo" },
+  { sigla: "GO", nome: "Goiás" },
+  { sigla: "MA", nome: "Maranhão" },
+  { sigla: "MT", nome: "Mato Grosso" },
+  { sigla: "MS", nome: "Mato Grosso do Sul" },
+  { sigla: "MG", nome: "Minas Gerais" },
+  { sigla: "PA", nome: "Pará" },
+  { sigla: "PB", nome: "Paraíba" },
+  { sigla: "PR", nome: "Paraná" },
+  { sigla: "PE", nome: "Pernambuco" },
+  { sigla: "PI", nome: "Piauí" },
+  { sigla: "RJ", nome: "Rio de Janeiro" },
+  { sigla: "RN", nome: "Rio Grande do Norte" },
+  { sigla: "RS", nome: "Rio Grande do Sul" },
+  { sigla: "RO", nome: "Rondônia" },
+  { sigla: "RR", nome: "Roraima" },
+  { sigla: "SC", nome: "Santa Catarina" },
+  { sigla: "SP", nome: "São Paulo" },
+  { sigla: "SE", nome: "Sergipe" },
+  { sigla: "TO", nome: "Tocantins" },
+];
+
 export function StepInfractionData({ data, updateData }: StepInfractionDataProps) {
-  const [uploading, setUploading] = useState(false);
-  const [extracting, setExtracting] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -78,6 +113,14 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
         }
         break;
         
+      case 'ufOrgao':
+        if (!value.trim()) {
+          newErrors.ufOrgao = 'UF do órgão é obrigatória';
+        } else {
+          delete newErrors.ufOrgao;
+        }
+        break;
+        
       case 'descricaoInfracao':
         if (!value.trim()) {
           newErrors.descricaoInfracao = 'Descrição da infração é obrigatória';
@@ -105,11 +148,26 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
     validateField(field, data[field as keyof WizardData] as string);
   };
 
+  const formatCurrency = (value: string): string => {
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return '';
+    const amount = parseInt(numbers, 10) / 100;
+    return amount.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL'
+    });
+  };
+
   const handleChange = (field: keyof ValidationErrors, value: string) => {
-    updateData({ [field]: value });
+    let formattedValue = value;
     
+    if (field === 'valorMulta') {
+      formattedValue = formatCurrency(value);
+    }
+    
+    updateData({ [field]: formattedValue });
     if (touched[field]) {
-      validateField(field, value);
+      validateField(field, formattedValue);
     }
   };
 
@@ -118,91 +176,16 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
       data.numeroAuto.trim() &&
       data.dataInfracao.trim() &&
       data.dataCiencia.trim() &&
-      data.localInfracao.trim() &&
       data.orgaoAutuador.trim() &&
+      data.ufOrgao.trim() &&
+      data.localInfracao.trim() &&
       data.descricaoInfracao.trim() &&
       data.valorMulta.trim();
   };
 
   useEffect(() => {
     updateData({ _step2Valid: isFormValid() } as any);
-  }, [data.numeroAuto, data.dataInfracao, data.dataCiencia, data.localInfracao, data.orgaoAutuador, data.descricaoInfracao, data.valorMulta, errors]);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type - Only images supported
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Formato inválido. Use apenas JPG ou PNG. Para PDFs, tire uma foto ou screenshot.');
-      return;
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 10MB');
-      return;
-    }
-
-    setUploadedFile(file);
-    setExtracting(true);
-
-    try {
-      const base64Data = await fileToBase64(file);
-      
-      console.log('Calling extract-ait function with file:', file.name);
-      
-      // Call edge function to extract data
-      const { data: extractedData, error } = await supabase.functions.invoke('extract-ait', {
-        body: { 
-          fileName: file.name,
-          fileType: file.type,
-          fileData: base64Data
-        }
-      });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Erro ao processar arquivo');
-      }
-
-      if (extractedData && extractedData.error) {
-        console.error('API returned error:', extractedData.error);
-        throw new Error(extractedData.error);
-      }
-
-      if (extractedData) {
-        console.log('Extracted data received:', extractedData);
-        
-        updateData({
-          numeroAuto: extractedData.numeroAuto || data.numeroAuto,
-          dataInfracao: extractedData.dataInfracao || data.dataInfracao,
-          dataCiencia: extractedData.dataCiencia || data.dataCiencia,
-          orgaoAutuador: extractedData.orgaoAutuador || data.orgaoAutuador,
-          localInfracao: extractedData.localInfracao || data.localInfracao,
-          descricaoInfracao: extractedData.descricaoInfracao || data.descricaoInfracao,
-          valorMulta: extractedData.valorMulta || data.valorMulta,
-        });
-        toast.success('Dados extraídos com sucesso! Revise e ajuste se necessário.');
-      }
-    } catch (error) {
-      console.error('Erro ao extrair dados:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast.error(`Erro ao extrair dados: ${errorMessage}. Preencha manualmente.`);
-    } finally {
-      setExtracting(false);
-    }
-  };
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
+  }, [data.numeroAuto, data.dataInfracao, data.dataCiencia, data.orgaoAutuador, data.ufOrgao, data.localInfracao, data.descricaoInfracao, data.valorMulta, errors]);
 
   // Calcular prazo restante
   const calcularPrazoRestante = () => {
@@ -225,55 +208,9 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Dados da Infração</h3>
         <p className="text-sm text-muted-foreground">
-          Faça upload do Auto de Infração (AIT) para extração automática dos dados ou preencha manualmente.
+          Preencha os dados conforme constam no Auto de Infração (AIT).
         </p>
       </div>
-
-      {/* Upload AIT */}
-      <Alert>
-        <Upload className="h-4 w-4" />
-        <AlertDescription>
-          <div className="space-y-3">
-            <p className="font-medium">Upload do Auto de Infração (AIT)</p>
-            <p className="text-sm">
-              Envie uma foto (JPG ou PNG) do seu Auto de Infração para preenchimento automático.
-            </p>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => document.getElementById('ait-upload')?.click()}
-                disabled={extracting}
-                className="gap-2"
-              >
-                {extracting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Extraindo dados...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Escolher arquivo
-                  </>
-                )}
-              </Button>
-              {uploadedFile && (
-                <span className="text-sm text-muted-foreground">
-                  {uploadedFile.name}
-                </span>
-              )}
-            </div>
-            <input
-              id="ait-upload"
-              type="file"
-              accept=".jpg,.jpeg,.png"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </div>
-        </AlertDescription>
-      </Alert>
 
       <div className="grid gap-4">
         <div className="space-y-2">
@@ -359,23 +296,74 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
           </Alert>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="orgaoAutuador">Órgão Autuador *</Label>
-          <Input
-            id="orgaoAutuador"
-            value={data.orgaoAutuador}
-            onChange={(e) => handleChange('orgaoAutuador', e.target.value)}
-            onBlur={() => handleBlur('orgaoAutuador')}
-            placeholder="Ex: Detran-SP, CET, PRF"
-            className={touched.orgaoAutuador && errors.orgaoAutuador ? 'border-destructive' : ''}
-            required
-          />
-          {touched.orgaoAutuador && errors.orgaoAutuador && (
-            <p className="text-sm text-destructive flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.orgaoAutuador}
-            </p>
-          )}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="orgaoAutuador">Órgão Autuador *</Label>
+            <Select
+              value={data.orgaoAutuador}
+              onValueChange={(value) => {
+                updateData({ orgaoAutuador: value });
+                if (touched.orgaoAutuador) {
+                  validateField('orgaoAutuador', value);
+                }
+              }}
+            >
+              <SelectTrigger 
+                id="orgaoAutuador"
+                className={touched.orgaoAutuador && errors.orgaoAutuador ? 'border-destructive' : ''}
+                onBlur={() => handleBlur('orgaoAutuador')}
+              >
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {ORGAOS_AUTUADORES.map((orgao) => (
+                  <SelectItem key={orgao} value={orgao}>
+                    {orgao}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {touched.orgaoAutuador && errors.orgaoAutuador && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.orgaoAutuador}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ufOrgao">UF do Órgão *</Label>
+            <Select
+              value={data.ufOrgao}
+              onValueChange={(value) => {
+                updateData({ ufOrgao: value });
+                if (touched.ufOrgao) {
+                  validateField('ufOrgao', value);
+                }
+              }}
+            >
+              <SelectTrigger 
+                id="ufOrgao"
+                className={touched.ufOrgao && errors.ufOrgao ? 'border-destructive' : ''}
+                onBlur={() => handleBlur('ufOrgao')}
+              >
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {ESTADOS_BRASILEIROS.map((estado) => (
+                  <SelectItem key={estado.sigla} value={estado.sigla}>
+                    {estado.sigla}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {touched.ufOrgao && errors.ufOrgao && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.ufOrgao}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -435,40 +423,6 @@ export function StepInfractionData({ data, updateData }: StepInfractionDataProps
             </p>
           )}
         </div>
-
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="space-y-3">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="pagouComDesconto"
-                checked={data.pagouComDesconto}
-                onCheckedChange={(checked) => 
-                  updateData({ pagouComDesconto: checked as boolean })
-                }
-              />
-              <div className="space-y-1">
-                <Label htmlFor="pagouComDesconto" className="cursor-pointer font-medium">
-                  Já paguei a multa com desconto de 40% via SNE
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Importante:</strong> Em algumas jurisdições, o pagamento com desconto via Sistema de Notificação Eletrônica (SNE) 
-                  pode impedir a interposição de defesa ou recurso. Marque esta opção se for o seu caso.
-                </p>
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
-
-        {data.pagouComDesconto && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Como você informou que pagou com desconto via SNE, verifique com o órgão autuador se ainda é possível 
-              apresentar defesa. Em alguns casos, o pagamento implica em renúncia ao direito de defesa.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {!isFormValid() && Object.values(touched).some(v => v) && (
           <Alert variant="destructive">

@@ -120,7 +120,7 @@ export function StepDefenseReason({ data, updateData }: StepDefenseReasonProps) 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Fatos e Fundamentos</h3>
+        <h3 className="text-lg font-semibold text-yellow-400">Fatos e Fundamentos</h3>
         <p className="text-sm text-muted-foreground">
           Explique os fatos ocorridos e fundamente sua defesa com base jurídica.
         </p>

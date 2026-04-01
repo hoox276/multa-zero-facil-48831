@@ -142,7 +142,7 @@ export function StepPreview({ data, updateData }: StepPreviewProps) {
                     residente e domiciliado em {data.endereco || "[ENDEREÇO]"}, 
                     {data.cidade || "[CIDADE]"}/{data.estado || "[UF]"}, por meio deste instrumento, 
                     vem, respeitosamente, perante V.Sa., nos termos do art. 280 e seguintes do Código de 
-                    Trânsito Brasileiro (Lei nº 9.503/97) e da Resolução CONTRAN nº 918/2022, apresentar
+                    Trânsito Brasileiro (Lei nº 9.503/97) e da <span className="text-yellow-600 font-semibold">Resolução CONTRAN nº 918/2022</span>, apresentar
                   </p>
 
                   <p className="text-center font-bold">DEFESA PRÉVIA</p>

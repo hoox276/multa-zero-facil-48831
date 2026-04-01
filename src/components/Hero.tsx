@@ -30,7 +30,7 @@ export function Hero({ onStart }: HeroProps) {
 
           {/* Main heading */}
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-tight text-balance">
-            <span className="text-pink-400">Sua Defesa</span> de Multa em Minutos
+            <span className="text-yellow-400">Sua Defesa</span> de Multa em Minutos
           </h1>
 
           {/* Subheading */}

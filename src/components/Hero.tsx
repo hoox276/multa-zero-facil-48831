@@ -44,7 +44,7 @@ export function Hero({ onStart }: HeroProps) {
               size="xl" 
               variant="hero"
               onClick={onStart}
-              className="group"
+              className="group bg-yellow-400 text-yellow-950 hover:bg-yellow-300 border-yellow-300"
             >
               Iniciar Minha Defesa
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />

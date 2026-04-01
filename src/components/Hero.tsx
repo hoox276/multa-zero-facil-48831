@@ -2,11 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, FileText, CheckCircle2 } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 
-interface HeroProps {
-  onStart: () => void;
-}
-
-export function Hero({ onStart }: HeroProps) {
+export function Hero() {
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background with overlay */}
@@ -43,7 +39,6 @@ export function Hero({ onStart }: HeroProps) {
             <Button 
               size="xl" 
               variant="hero"
-              onClick={onStart}
               className="group bg-yellow-400 text-yellow-950 hover:bg-yellow-300 border-yellow-300"
             >
               Iniciar Minha Defesa

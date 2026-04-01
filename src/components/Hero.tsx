@@ -35,7 +35,7 @@ export function Hero({ onStart }: HeroProps) {
 
           {/* Subheading */}
           <p className="text-xl md:text-2xl text-primary-foreground/80 max-w-2xl mx-auto text-balance">
-            Gere documentos profissionais de Defesa Prévia com IA, conforme CTB e Resolução Contran 918/2022
+            <span className="text-yellow-400">Gere documentos profissionais</span> de Defesa Prévia com IA, conforme CTB e Resolução Contran 918/2022
           </p>
 
           {/* CTA Button */}
